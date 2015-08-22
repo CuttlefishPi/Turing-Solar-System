@@ -1,0 +1,288 @@
+View.Set ("graphics:1280;720")
+setscreen ("offscreenonly")
+colourback(255)
+colour(0)
+cls
+var font2 : int := Font.New ("Times New Romans:8") %
+var fontTitle : int := Font.New ("Times New Romans:23") %
+var originX, originY:real :=0
+var zoom: real := 2
+var clickX, clickY, drag: int := 0% for navigation
+
+%CHANGE NUMBER OF PARTICLES SPAWNED
+var particleNum: int := 250
+%----------------------------------
+
+var entropy: real := 100
+var initVol: real := 0
+var posX: array 1..particleNum of real 
+var posY: array 1..particleNum of real
+var volX: array 1..particleNum of real
+var volY: array 1..particleNum of real
+var mass: array 1..particleNum of real
+var tracking: array 1..particleNum of int
+var trackPar: int := -1
+var particleColour: array 1..particleNum of int 
+var distX: real
+var distY: real
+var particleAng: real
+var distance: real
+var collision: boolean := false
+var collided: array 1..particleNum of boolean
+for i: 1..particleNum%
+    posX(i) := Rand.Int(1,maxx)+Rand.Real
+    posY(i) := Rand.Int(1,maxy)+Rand.Real
+    volX(i) := 0%(Rand.Int(-1,0)+ Rand.Real)/1
+    volY(i) := 0%(Rand.Int(-1,0)+ Rand.Real)/1
+    tracking(i) := 0
+    mass(i) := Rand.Int(1,7)
+    collided(i) := false
+    particleColour(i) := Rand.Int(28,63)
+
+end for
+
+var mouseX: int
+var mouseY: int
+var bot: int
+
+var numPlace:int := 1
+var clickDown: boolean:= false
+var inDist: real
+%%%%%%%%%%%%%%%Initials%%%%%%%%%%%%%%%%%%%%%%%%%%
+loop
+    Mouse.Where (mouseX, mouseY, bot)
+    %if bot = 1 and clickDown = false then
+        %posX(numPlace) := mouseX
+        %posY(numPlace) := mouseY
+        
+        distX := posX(numPlace)-(maxx/2)
+        distY := posY(numPlace)-(maxy/2)
+        particleAng := arctan(distY/distX)
+        inDist := sqrt((distX)**2 +(distY)**2)
+        
+        if distX < 0 and distY < 0 then
+                particleAng := particleAng + (3.141592653589793238)
+        end if
+        if distX <= 0 and distY > 0 then
+            particleAng := particleAng + (3.141592653589793238)
+        end if
+        volX(numPlace):= -inDist*sin(particleAng)*0.003
+        volY(numPlace):= inDist*cos(particleAng)*0.003
+        
+        for i: 1..numPlace
+            drawfilloval(round(originX+posX(i)),round(originY+posY(i)),round(mass(i)/2), round(mass(i)/2),particleColour(i))
+        end for
+        
+        
+        if inDist > 470 and numPlace > 50 then
+            posX(numPlace) := Rand.Int(1,maxx)+Rand.Real
+            posY(numPlace) := Rand.Int(1,maxy)+Rand.Real
+        elsif inDist > 73 and numPlace <= 50 then
+            posX(numPlace) := Rand.Int(1,maxx)+Rand.Real
+            posY(numPlace) := Rand.Int(1,maxy)+Rand.Real
+        else 
+            numPlace+=1
+        end if
+        
+        %clickDown := true
+    %end if
+    
+     %if bot = 0 then
+        % clickDown := false
+     %end if
+     
+     Font.Draw ("Generating Solar System",maxx div 2-200, maxy div 2, fontTitle, brightgreen)
+    exit when numPlace > particleNum
+    View.UpdateArea(0,0,maxx,maxy)
+end loop
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+var tracePar: boolean := false
+var clickOn: int := 0
+procedure checkBox (inX, inY : int, check : string) % check boxes
+
+    drawfillbox (inX, inY, inX + 20, inY + 20, grey)
+    drawbox (inX, inY, inX + 20, inY + 20, brightgreen)
+    if tracePar = true then
+        drawline (inX, inY, inX + 20, inY + 20, black)
+        drawline (inX, inY + 20, inX + 20, inY, black)
+    end if
+    Font.Draw (check, inX - 15, inY + 25, font2, brightgreen)
+    if mouseX > inX and mouseX < inX + 20 and mouseY > inY and mouseY < inY + 20 and bot = 1 and clickOn = 0 then
+        if tracePar = false then
+            tracePar := true
+        elsif tracePar = true then
+            tracePar := false
+        end if
+        clickOn := 1
+    end if
+    if bot = 0 then
+        clickOn := 0
+    end if
+end checkBox
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Mouse.ButtonChoose ("multibutton")
+loop 
+Mouse.Where (mouseX, mouseY, bot) 
+if tracePar= false then
+    cls
+end if
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if collision = true then
+        for i: 1..particleNum
+
+            for a: 1..particleNum
+                
+                    %if mass(i) > mass(a) then
+                    if i not = a  and mass(i) not = 0 then
+                            distX := posX(a) - posX(i)
+                            distY := posY(a) - posY(i)
+                            distance := sqrt((distX**2) + (distY**2))
+            
+                    if distance <mass(i)**(1/2) + mass(a)**(1/2) or distance < 4 then
+                        volX(i) :=  ((volX(i)*mass(i)) + (volX(a)*mass(a)) ) / (mass(i) + mass(a))
+                        volY(i) := ( (volY(i)*mass(i)) + (volY(a)*mass(a)) ) / (mass(i) + mass(a))
+                        mass(i) := mass(a) + mass(i)
+                        mass(a) := 0
+                        particleColour(a):= 255
+                    
+                        collided(i) := false
+                    
+                    
+                   end if
+                end if
+            end for
+            collided(i) := false
+        end for
+    end if
+collision := false 
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    for i: 1..particleNum
+    %if i = 1 then
+    collided(i) := false
+        for a: 1..particleNum
+          if i not = a  and mass(i) not = 0 then
+            distX := posX(a) - posX(i)
+            distY := posY(a) - posY(i)
+
+            
+            distance := sqrt((distX**2) + (distY**2))
+            if distX = 0  or distY = 0 then 
+                posX(i) := posX(i) + 0.001
+                posY(i) := posY(i) + 0.001
+                %  
+                distX := posX(i) - posX(a)
+                distY := posY(i) - posY(a)
+                particleAng := arctan(distX/distY)
+                distance := sqrt((distX**2) + (distY**2))
+                %
+            end if
+         
+            particleAng := arctan(distY/distX)
+            if distX < 0 and distY < 0 then
+                particleAng := particleAng + (3.141592653589793238)
+            end if
+            if distX <= 0 and distY > 0 then
+                particleAng := particleAng + (3.141592653589793238)
+            end if
+             
+                
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if distance < mass(i)**(1/2) + mass(a)**(1/2) or distance < 4 then  
+                collision := true
+                collided(i) := true
+                collided(a) := true
+            end if 
+            
+            
+            %%%%%%%%%%%%%%%%%%%%%
+            if collided(i) = false then
+                volX(i) := volX(i) + ((2 * mass(i)*mass(a))/(distance**2) * cos(particleAng))/mass(i)
+                  volY(i) := volY(i) + ((2 * mass(i)*mass(a))/(distance**2) * sin(particleAng))/mass(i)
+            end if
+           end if
+        end for
+        %end if
+        %if collided(i) = false then
+            
+        
+         
+        %drawline(round(originX+posX(i)),round(originY+posY(i)),round(posX(i)+volX(i)), round(posY(i)+volY(i)),particleColour(i))
+        
+        %put particleAng * (180/3.141592653589793238)
+        %drawdot(round(posX(i)),round(posY(i)),particleColour(i))
+        
+        drawfilloval(round(originX+posX(i)),round(originY+posY(i)),round(mass(i)**(1/2)), round(mass(i)**(1/2)),particleColour(i))
+        
+        
+        %drawline(round(posX(1)),round(posY(1)),round(posX(42)), round(posY(42)),green)
+        %drawline(round(posX(3)),round(posY(3)),round(posX(73)), round(posY(73)),blue)
+        
+        
+        %%%%%%%%%%%%%%%%%%%tracking%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %Mouse.Where (mouseX, mouseY, bot) 
+        %if (bot = 1 and sqrt((mouseX-posX(i))**2 + (mouseY-posY(i))**2) <= (mass(i)/2)) then
+        %        trackPar := i
+        %        
+        % end if
+           
+        % if trackPar = i then
+        %     originX -=volX(i)
+        %     originY -=volY(i)
+        %     drawfilloval(round(originX+posX(i)),round(originY+posY(i)),round(mass(i)/2), round(mass(i)/2),brightred)
+        % end if
+
+     end for
+    
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Mouse.Where (mouseX, mouseY, bot)
+    if bot >=100 then
+        for i:1..particleNum
+            Font.Draw (intstr(i),round(originX+posX(i)+(mass(i)**(1/2)) ), round(originY+posY(i)), font2, brightgreen)
+        end for
+        View.UpdateArea(0,0,maxx,maxy)
+        get trackPar
+    end if 
+    
+    if trackPar>= 0 then
+        originX -=volX(trackPar)
+        originY -=volY(trackPar)
+        drawfilloval(round(originX+posX(trackPar)),round(originY+posY(trackPar)),round(mass(trackPar)**(1/2)), round(mass(trackPar)**(1/2)),brightred)
+    end if   
+%for i: 1..particleNum%
+    for i: 1..particleNum
+        posX(i) := posX(i) + volX(i)
+        posY(i) := posY(i) + volY(i)
+    end for
+    
+    %drawline(round(posX(1)),round(posY(1)),round(posX(1)-((142 * mass )/(distance**2) * cos(particleAng))*200), round(posY(1)-((142 * mass )/(distance**2) * sin(particleAng))*200),red)
+%end for
+ 
+if bot = 1 then
+    for i: 1..particleNum
+        if drag = 0 then
+            clickX := mouseX
+            clickY := mouseY
+            drag := 1
+        end if
+        if drag = 1 then
+            posX(i) := posX(i) + ((clickX)-mouseX)*0.3
+              posY(i) := posY(i) + ((clickY)-mouseY)*0.3
+        end if
+        drawline(clickX,clickY,mouseX,mouseY, brightred)
+    end for
+end if
+if bot = 0 and drag = 1 then
+    drag := 0
+end if
+
+checkBox (20, 20, "Trace")
+    
+View.UpdateArea(0,0,maxx,maxy)
+end loop
