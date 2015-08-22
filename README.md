@@ -5,6 +5,7 @@ This repository consists of some code a wrote a while back to make a simple sola
 It uses some basic physics to attract randomly spawned particles together to form larger objects.
 
 CONTROLS:
+  
   Movement: Click and hold the left mouse button and drag the mouse to move around in space.
 
   Display: Click the square in the bottom left hand corner of the run window to toggle tracing the object paths.
